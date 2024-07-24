@@ -9,7 +9,7 @@ spec:
   interval: 1m0s
   recurseSubmodules: true
   ref:
-    branch: dev-azure
+    branch: main
   secretRef:
     name: flux-system
   url: ssh://git@github.com/kaytu-io/kaytu-flux.git
