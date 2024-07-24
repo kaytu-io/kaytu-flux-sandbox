@@ -119,7 +119,7 @@ spec:
         userKey: admin-user
         passwordKey: admin-password
   install:
-    createNamespace: true
+    createNamespace: false
     crds: Create
   upgrade:
     crds: CreateReplace
@@ -145,7 +145,7 @@ spec:
       enabled: true
       namespace: prom-system
   install:
-    createNamespace: true
+    createNamespace: false
     crds: Create
   upgrade:
     crds: CreateReplace
