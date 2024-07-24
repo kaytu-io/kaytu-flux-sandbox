@@ -10,5 +10,4 @@ resources:
   - contour.yaml
   - keda.yaml
   - nats.yaml
-  - ethtool.yaml
   - opensearch.yaml
