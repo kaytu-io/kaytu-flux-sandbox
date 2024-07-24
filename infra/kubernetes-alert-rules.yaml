@@ -1,0 +1,101 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    role: alert-rules
+  name: kubernetes-alert-rules
+  namespace: prom-system
+spec:
+  groups:
+    - name: http
+      rules:
+        - alert: KaytuHTTPErrors
+          expr: sum(rate(kaytu_http_requests_total{status="5xx"}[5m])) by (job, method, handler, namespace)/sum(rate(kaytu_http_requests_total[5m])) by (job, method, handler, namespace) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'High error rate ({{ $value | printf "%.3f" }}) on Kaytu services ({{ $labels.job }})'
+            description: 'High error rate ({{ $value | printf "%.3f" }}) on Kaytu services ({{ $labels.job }}) in namespace {{ $labels.namespace }}'
+        - alert: KaytuHTTPResponseTime
+          expr: histogram_quantile(0.5, sum by (job, namespace, le) (rate(kaytu_http_request_duration_seconds_bucket[5m]))) > 10
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'High response time ({{ $value | printf "%.3f" }}) on Kaytu services ({{ $labels.job }})'
+            description: 'High response time ({{ $value | printf "%.3f" }}) on Kaytu services ({{ $labels.job }}) in namespace {{ $labels.namespace }}'
+
+    - name: nats-custom
+      rules:
+        - alert: PendingCountExceeded
+          expr: avg(nats_consumer_num_ack_pending) by (stream_name, consumer_name, job) > 1000
+          for: 5m
+          labels:
+            severity: info
+          annotations:
+            summary: "stream {{$labels.stream_name}} has unhealthy consumer named {{$labels.consumer_name}} on namespace {{ $labels.namespace }} on namespace {{ $labels.namespace }}"
+            description: "stream {{$labels.stream_name}} has unhealthy consumer named {{$labels.consumer_name}} on namespace {{ $labels.namespace }} on namespace {{ $labels.namespace }}"
+
+        - alert: NatsMemoryPressure
+          expr: container_memory_working_set_bytes{container="nats"} / (container_spec_memory_limit_bytes{container="nats"} != 0) > 0.7
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Container {{$labels.container}} in Pod {{$labels.pod}} memory on namespace {{ $labels.namespace }} is using {{ $value | humanizePercentage }} of its capacity on namespace {{ $labels.namespace }}"
+            description: "Container {{$labels.container}} in Pod {{$labels.pod}} memory on namespace {{ $labels.namespace }} is using {{ $value | humanizePercentage }} of its capacity on namespace {{ $labels.namespace }}"
+
+        - alert: NatsCPUPressure
+          expr: (sum(rate(container_cpu_usage_seconds_total{container="nats"}[5m])) by (pod)/sum(container_spec_cpu_quota{container!="POD", pod!=""} / 100000) by (pod))  > 0.8
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{$labels.pod}} CPU on namespace {{ $labels.namespace }} is using {{ $value | humanizePercentage }} of its capacity on namespace {{ $labels.namespace }}"
+            message: "Pod {{$labels.pod}} CPU on namespace {{ $labels.namespace }} is using {{ $value | humanizePercentage }} of its capacity on namespace {{ $labels.namespace }}"
+
+        - alert: NatsPodNotReady
+          expr: kube_pod_container_status_ready{container="nats"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Container {{$labels.container}} in pod {{$labels.namespace}}/{{$labels.pod}} is not ready on namespace {{ $labels.namespace }}"
+            message: "Container {{$labels.container}} in pod {{$labels.namespace}}/{{$labels.pod}} is not ready on namespace {{ $labels.namespace }}"
+
+        - alert: NatsPodRestart
+          expr: increase(kube_pod_container_status_restarts_total{container="nats"}[20m]) > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{$labels.namespace}}/{{$labels.pod}} has restarted more than 2 times. on namespace {{ $labels.namespace }}"
+            message: "Pod {{$labels.namespace}}/{{$labels.pod}} has restarted more than 2 times in the last 20 minutes. on namespace {{ $labels.namespace }}"
+
+    - name: pods
+      rules:
+        - alert: PodCrashAlert
+          expr: kube_pod_status_phase{phase="Failed"} == 1
+          for: 10s
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has crashed"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been failed."
+        - alert: NetworkThrottle
+          expr: sum(rate(node_net_ethtool{type=~"bw_in_allowance_exceeded|bw_out_allowance_exceeded|conntrack_allowance_exceeded|pps_allowance_exceeded|linklocal_allowance_exceeded"}[1m])) > 1
+          for: 30s
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Packets are getting dropped over the network throttling, current per minute rate is {{ $value | printf "%.2f" }}'
+            description: 'Packets are getting dropped over the network throttling, current per minute rate is {{ $value | printf "%.2f" }}'
+        - alert: FinderUnhealthy
+          expr: kaytu_reporter_es_steampipe_health_check{namespace="ws-461045852610243491"} < 1 # 1 is healthy, 0 is unhealthy only check for dev namespace
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Finder is unhealthy"
+            description: "Finder is unhealthy on namespace {{ $labels.namespace }}"

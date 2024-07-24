@@ -1,0 +1,162 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: HelmRepository
+metadata:
+  name: prometheus-community
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: https://prometheus-community.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: prometheus
+  namespace: flux-system
+spec:
+  targetNamespace: prom-system
+  interval: 1m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      version: 56.0.3
+  values:
+    prometheus-node-exporter:
+      extraArgs:
+        - --collector.ethtool
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    prometheus:
+      prometheusSpec:
+        scrapeInterval: 30s
+        ruleSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        podMonitorNamespaceSelector: {}
+        serviceMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorNamespaceSelector: {}
+        storageSpec:
+          ## Using PersistentVolumeClaim
+          ##
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 20Gi
+    alertmanager:
+      alertmanagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 4Gi
+      enabled: true
+      config:
+        route:
+          group_by: ["job"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 12h
+          routes:
+            - matchers:
+                - alertname =~ "Watchdog|InfoInhibitor"
+              receiver: "null"
+            - matchers:
+                - alertname = "CPUThrottlingHigh"
+                - container = "do-node-agent"
+              receiver: "null"
+#            - matchers:
+#                - severity =~ "major|critical"
+#              receiver: "slack"
+#            - matchers:
+#                - severity =~ "major|critical|test"
+#              receiver: "slack-test"
+            - match:
+              receiver: "null"
+              continue: true
+        receivers:
+          - name: "null"
+    loki:
+      isDefault: false
+    grafana:
+      assertNoLeakedSecrets: false
+      enabled: true
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+            - name: "kaytu"
+              orgId: 1
+              folder: ""
+              type: file
+              disableDeletion: false
+              editable: false
+              options:
+                path: /var/lib/grafana/dashboards/kaytu
+      ## Reference to external ConfigMap per provider. Use provider name as key and ConfigMap name as value.
+      ## A provider dashboards must be defined either by external ConfigMaps or in values.yaml, not in both.
+      ## ConfigMap data example:
+      ##
+      ## data:
+      ##   example-dashboard.json: |
+      ##     RAW_JSON
+      ##
+      dashboardsConfigMaps:
+        kaytu: "kaytu-dashboards"
+      sidecar:
+        datasources:
+          enabled: true
+          searchNamespace: "ALL"
+      admin:
+        existingSecret: prom-system-prometheus-grafana
+        userKey: admin-user
+        passwordKey: admin-password
+  install:
+    createNamespace: true
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: prometheus-pushgateway
+  namespace: flux-system
+spec:
+  targetNamespace: prom-system
+  interval: 1m
+  chart:
+    spec:
+      chart: prometheus-pushgateway
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      version: 1.4.2
+  values:
+    serviceMonitor:
+      enabled: true
+      namespace: prom-system
+  install:
+    createNamespace: true
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+---
+apiVersion: v1
+data:
+  admin-password: a2F5dHUtZ2YtcGFzcwo=
+  admin-user: a2F5dHUtZ2YK
+  ldap-toml: ""
+kind: Secret
+metadata:
+  name: prom-system-prometheus-grafana
+  namespace: prom-system
+type: Opaque

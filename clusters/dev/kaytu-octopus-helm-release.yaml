@@ -1,0 +1,21 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: kaytu-octopus
+  namespace: flux-system
+spec:
+  interval: 1m
+  targetNamespace: kaytu-octopus
+  releaseName: kaytu-octopus
+  chart:
+    spec:
+      chart: ./kaytu-octopus
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 1m
+      reconcileStrategy: Revision
+  install:
+    createNamespace: true

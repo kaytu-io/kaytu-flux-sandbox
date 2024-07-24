@@ -1,0 +1,22 @@
+namespace: prom-system
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: kaytu-dashboards
+    files:
+      - echo-http.json
+      - kaytu.json
+      - kaytu-cli.json
+      - kaytu-user.json
+      - kaytu-resource.json
+      - kaytu-org.json
+      - kaytu-company.json
+      - kaytu-overtime-usage.json
+      - describe.json
+      - insight.json
+      - elasticsearch.json
+      - postgres-exporter.json
+      - postgres-exporter-simple.json
+      - spend-dashboard.json
+      - jaeger.json
+      - nats.json

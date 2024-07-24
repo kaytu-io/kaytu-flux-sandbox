@@ -1,0 +1,368 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "PEA36AA520DA6B48C"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "/.*/",
+          "values": true
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "PEA36AA520DA6B48C"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  '${sts_arn:raw}' ",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "STS ARN",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "PEA36AA520DA6B48C"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true
+          },
+          "decimals": 0,
+          "links": [
+            {
+              "title": "Drill down to resource view",
+              "url": "https://gf.kaytu.io/d/ae8c7d96-5883-46c2-9b53-236cfeaa673d/kaytu-resource-dashboard?orgId=1&var-resource_id=${__data.fields.resource_id}"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "resource_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 285
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": true,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "PEA36AA520DA6B48C"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DISTINCT resource_id, region, account_id, first_executed, first_cost, first_instance_type, last_executed, last_cost, last_saving, last_instance_type FROM (\n  SELECT\n    account_id,\n    region,\n    resource_id,\n    first_value(executed_at) OVER (PARTITION BY resource_id ORDER BY executed_at ASC) as first_executed,\n    first_value(current_cost) OVER (PARTITION BY resource_id ORDER BY executed_at ASC) as first_cost,\n    first_value(savings) OVER (PARTITION BY resource_id ORDER BY executed_at ASC) as first_saving,\n    first_value(instance_type) OVER (PARTITION BY resource_id ORDER BY executed_at ASC) as first_instance_type,\n    first_value(executed_at) OVER (PARTITION BY resource_id ORDER BY executed_at DESC) as last_executed,\n    first_value(current_cost) OVER (PARTITION BY resource_id ORDER BY executed_at DESC) as last_cost,\n    first_value(savings) OVER (PARTITION BY resource_id ORDER BY executed_at DESC) as last_saving,\n    first_value(instance_type) OVER (PARTITION BY resource_id ORDER BY executed_at DESC) as last_instance_type\n  FROM\n  (\n    SELECT\n      statistics ->> 'accountID' as account_id,\n      request ->> 'region' as region,\n      statistics ->> 'resourceID' as resource_id,\n      request -> 'instance' ->> 'instanceType' as instance_type,\n      created_at as executed_at,\n      (statistics ->> 'ec2InstanceCurrentCost')::float as current_cost,\n      (statistics ->> 'ec2InstanceSavings')::float as savings\n    FROM\n      usage_v2\n    WHERE\n      api_endpoint = 'ec2-instance' and\n      ((request ->> 'loading') is null or (request ->> 'loading') != 'true') and\n      (request -> 'identification' ->> 'sts_arn') = '${sts_arn:raw}' and\n      (statistics ->> 'ec2InstanceSavings')::float > 0\n  ) as u\n  order by executed_at desc\n) as u2",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "EC2 Instance Optimization runs",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "PEA36AA520DA6B48C"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true
+          },
+          "decimals": 0,
+          "links": [
+            {
+              "title": "Drill down to resource view",
+              "url": "https://gf.kaytu.io/d/ae8c7d96-5883-46c2-9b53-236cfeaa673d/kaytu-resource-dashboard?orgId=1&var-resource_id=${__data.fields.resource_id}"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "resource_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 285
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 13,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": true,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "PEA36AA520DA6B48C"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DISTINCT resource_id, region, account_id, first_executed, first_cost,first_instance_type, last_executed, last_cost, last_saving, last_instance_type FROM (\n  SELECT\n    account_id,\n    region,\n    resource_id,\n    first_value(executed_at) OVER (PARTITION BY resource_id ORDER BY executed_at ASC) as first_executed,\n    first_value(current_cost) OVER (PARTITION BY resource_id ORDER BY executed_at ASC) as first_cost,\n    first_value(savings) OVER (PARTITION BY resource_id ORDER BY executed_at ASC) as first_saving,\n    first_value(instance_type) OVER (PARTITION BY resource_id ORDER BY executed_at ASC) as first_instance_type,\n    first_value(executed_at) OVER (PARTITION BY resource_id ORDER BY executed_at DESC) as last_executed,\n    first_value(current_cost) OVER (PARTITION BY resource_id ORDER BY executed_at DESC) as last_cost,\n    first_value(savings) OVER (PARTITION BY resource_id ORDER BY executed_at DESC) as last_saving,\n    first_value(instance_type) OVER (PARTITION BY resource_id ORDER BY executed_at DESC) as last_instance_type\n  FROM\n  (\n    SELECT\n      statistics ->> 'accountID' as account_id,\n      request ->> 'region' as region,\n      statistics ->> 'resourceID' as resource_id,\n      request -> 'instance' ->> 'instanceType' as instance_type,\n      created_at as executed_at,\n      (statistics ->> 'rdsInstanceCurrentCost')::float as current_cost,\n      (statistics ->> 'rdsInstanceSavings')::float as savings\n    FROM\n      usage_v2\n    WHERE\n      api_endpoint = 'aws-rds' and\n      ((request ->> 'loading') is null or (request ->> 'loading') != 'true') and\n      (request -> 'identification' ->> 'sts_arn') = '${sts_arn:raw}' and\n      (statistics ->> 'rdsInstanceSavings')::float > 0\n  ) as u\n  order by executed_at desc\n) as u2",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "RDS Instance Optimization runs",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "kaytu-cli"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "arn:aws:sts::237446062689:assumed-role/AWSReservedSSO_ViewOnlyAccess_c2fc30a3a825e180/jeff.jaw@wolterskluwer.com",
+          "value": "arn:aws:sts::237446062689:assumed-role/AWSReservedSSO_ViewOnlyAccess_c2fc30a3a825e180/jeff.jaw@wolterskluwer.com"
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "PEA36AA520DA6B48C"
+        },
+        "definition": "SELECT\n  distinct(request -> 'identification' -> 'sts_arn')\nFROM \n  usage_v2\n",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Identity",
+        "multi": false,
+        "name": "sts_arn",
+        "options": [],
+        "query": "SELECT\n  distinct(request -> 'identification' -> 'sts_arn')\nFROM \n  usage_v2\n",
+        "refresh": 2,
+        "regex": "/\"(.*)\"/",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {
+    "hidden": true,
+    "refresh_intervals": []
+  },
+  "timezone": "utc",
+  "title": "Kaytu Overtime Usage Dashboard",
+  "uid": "8b8a0fe9-b09a-4d28-81ee-d956d3bb809d",
+  "version": 2,
+  "weekStart": ""
+}

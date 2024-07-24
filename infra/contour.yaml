@@ -1,0 +1,44 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: contour-metrics-monitor
+  namespace: prom-system
+spec:
+  namespaceSelector:
+    matchNames:
+      - contour-system
+  endpoints:
+    - path: /metrics
+      port: https
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kaytu-internal
+  namespace: contour-system
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+spec:
+  externalTrafficPolicy: Local
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+  selector:
+    app.kubernetes.io/component: envoy
+    app.kubernetes.io/instance: contour
+    app.kubernetes.io/name: contour
+  sessionAffinity: None
+  type: LoadBalancer

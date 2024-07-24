@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - granfana-dashboards
+  - cert-manager.yaml
+  - contour.yaml
+  - kubernetes-alert-rules.yaml
+  - prometheus-operator.yaml
+  - sealed-secret.yaml
