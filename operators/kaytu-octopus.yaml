@@ -1,0 +1,30 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: kaytu-io
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://kaytu-io.github.io/kaytu-charts/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kaytu-octopus
+  namespace: flux-system
+spec:
+  targetNamespace: kaytu-octopus
+  interval: 1m
+  chart:
+    spec:
+      chart: kaytu-octopus
+      sourceRef:
+        kind: HelmRepository
+        name: kaytu-io
+        namespace: flux-system
+      version: 0.0.1
+  install:
+    createNamespace: true
+    crds: Create
+  upgrade:
+    crds: CreateReplace
