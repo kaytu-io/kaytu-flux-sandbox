@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export GITHUB_TOKEN="<value>"
+
 set -e
 
 if [[ -f scripts/vars.sh ]]; then
@@ -11,9 +13,10 @@ if [[ -z $FLUX ]]; then
   curl -s https://fluxcd.io/install.sh | sudo bash
 fi
 
-flux bootstrap git \
+flux bootstrap github \
   --components-extra=image-reflector-controller,image-automation-controller \
-  --url=ssh://git@github.com/kaytu-io/kaytu-flux.git \
+  --owner=kaytu-io \
+  --repository=kaytu-flux \
   --branch=main \
-  --recurse-submodules \
-  --path=clusters/dev
+  --path=clusters/dev \
+  --token-auth

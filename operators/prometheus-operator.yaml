@@ -149,14 +149,3 @@ spec:
     crds: Create
   upgrade:
     crds: CreateReplace
----
-apiVersion: v1
-data:
-  admin-password: a2F5dHUtZ2YtcGFzcwo=
-  admin-user: a2F5dHUtZ2YK
-  ldap-toml: ""
-kind: Secret
-metadata:
-  name: prom-system-prometheus-grafana
-  namespace: prom-system
-type: Opaque
