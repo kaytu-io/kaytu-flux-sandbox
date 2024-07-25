@@ -6,8 +6,8 @@ AWS_MASTER_ACCOUNT_SECRET_KEY="xxx"
 openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
 openssl rsa -pubout -in private_key.pem -out public_key.pem
 
-API_KEY_PUBLIC=$(cat public_key.pem)
-API_KEY_PRIVATE=$(cat private_key.pem)
+API_KEY_PUBLIC=$(cat public_key.pem | base64)
+API_KEY_PRIVATE=$(cat private_key.pem | base64)
 
 kubeseal --fetch-cert --controller-namespace sealed-secret > cert.pem
 
