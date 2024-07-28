@@ -12,3 +12,4 @@ resources:
   - nats.yaml
   - opensearch.yaml
   - vault.yaml
+  - dex-operator.yaml
