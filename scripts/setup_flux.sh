@@ -33,3 +33,5 @@ flux bootstrap git \
   --path=clusters/dev \
   --private-key-file="$KEY_FILE" \
   --ssh-key-algorithm=$SSH_KEY_ALGORITHM
+
+kubectl -n kaytu-octopus create secret tls web-tls --cert=./tls.crt --key=./tls.key

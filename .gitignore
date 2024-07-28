@@ -1,2 +1,4 @@
 .idea
 scripts/vars.sh
+tls.crt
+tls.key
