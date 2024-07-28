@@ -11,3 +11,4 @@ resources:
   - keda.yaml
   - nats.yaml
   - opensearch.yaml
+  - vault.yaml
