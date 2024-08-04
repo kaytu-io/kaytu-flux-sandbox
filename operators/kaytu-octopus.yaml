@@ -22,7 +22,7 @@ spec:
         kind: HelmRepository
         name: kaytu-io
         namespace: flux-system
-      version: 0.0.49
+      version: 0.0.50
   install:
     createNamespace: true
     crds: Create
@@ -30,6 +30,10 @@ spec:
     crds: CreateReplace
   values:
     kaytu:
+      appv2:
+        baseUrl: "https://app.kaytu.dev"
+      auth:
+        baseUrl: "https://auth.kaytu.dev"
       domain:
         auth: auth.kaytu.dev
         appv2: app.kaytu.dev
