@@ -22,22 +22,9 @@ spec:
         kind: HelmRepository
         name: kaytu-io
         namespace: flux-system
-      version: 0.0.65
+      version: 0.0.66
   install:
     createNamespace: true
     crds: Create
   upgrade:
     crds: CreateReplace
-  values:
-    kaytu:
-      appv2:
-        baseUrl: "https://app.kaytu.dev"
-      auth:
-        baseUrl: "https://auth.kaytu.dev"
-      domain:
-        auth: auth.kaytu.dev
-        appv2: app.kaytu.dev
-        grafana: gf.kaytu.dev
-        grpc: grpc.kaytu.dev
-        grpc_external: grpc-external.kaytu.dev
-        api: api.kaytu.dev
