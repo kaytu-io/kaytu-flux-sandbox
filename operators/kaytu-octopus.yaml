@@ -28,3 +28,7 @@ spec:
     crds: Create
   upgrade:
     crds: CreateReplace
+  values:
+    kaytu:
+      domain:
+        main: app.kaytu.dev
