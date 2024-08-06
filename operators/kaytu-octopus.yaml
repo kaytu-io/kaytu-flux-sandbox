@@ -22,7 +22,7 @@ spec:
         kind: HelmRepository
         name: kaytu-io
         namespace: flux-system
-      version: 0.0.74
+      version: 0.0.75
   install:
     createNamespace: true
     crds: Create
