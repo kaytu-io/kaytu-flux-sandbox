@@ -29,13 +29,11 @@ spec:
     crds: Create
   upgrade:
     crds: CreateReplace
-#  values:
-#    kaytu:
-#      dex:
-#        issuer: "https://demo.kaytu.io/dex"
-#        connectorsFromSecret: "dex-connectors-secret"
-#        enablePasswordDB: true
-#        staticPasswordsFromSecret: "dex-staticpass-secret"
-#        version-count: 0
-#      domain:
-#        main: demo.kaytu.io
+  values:
+    kaytu:
+      dex:
+        issuer: "https://demo4.kaytu.sh/dex"
+        connectorsFromSecret: "dex-connectors-secret"
+        version-count: 0
+      domain:
+        main: demo4.kaytu.sh
